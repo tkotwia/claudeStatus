@@ -12,7 +12,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     override init() {
         super.init()
-        statusItem.button?.image = NSImage(systemSymbolName: "asterisk", accessibilityDescription: "Claude sessions")
+        statusItem.button?.image = StatusItemController.menuBarIcon()
         statusItem.button?.imagePosition = .imageLeading
 
         let menu = NSMenu()
@@ -55,6 +55,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     // MARK: Menu bar title
+
+    /// The bundled glyph, or an SF Symbol when running outside the app bundle (e.g. `swift run`),
+    /// where a missing image would leave the status item invisible.
+    private static func menuBarIcon() -> NSImage? {
+        guard let icon = Bundle.main.image(forResource: "MenuBarIcon") else {
+            return NSImage(systemSymbolName: "asterisk", accessibilityDescription: "Claude sessions")
+        }
+        icon.isTemplate = true
+        icon.accessibilityDescription = "Claude sessions"
+        return icon
+    }
 
     private func updateTitle() {
         let title = NSMutableAttributedString()
@@ -107,6 +118,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         notifier?.refreshStatus()
         if notifier?.isDenied == true {
             warnings.append("⚠ Notifications are turned off in System Settings")
+        } else if let notifier, notifier.isSoundOn, notifier.isSoundOffInSystem {
+            warnings.append("⚠ Notification sound is turned off in System Settings")
         }
         if !warnings.isEmpty {
             warnings.forEach { menu.addItem(disabledItem($0)) }
@@ -129,6 +142,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             let reset = NSMenuItem(title: "Clear Done Sessions", action: #selector(resetDone), keyEquivalent: "")
             reset.target = self
             menu.addItem(reset)
+        }
+        if let notifier {
+            let sound = NSMenuItem(title: "Notification Sound", action: #selector(toggleSound), keyEquivalent: "")
+            sound.target = self
+            sound.state = notifier.isSoundOn ? .on : .off
+            menu.addItem(sound)
         }
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
@@ -176,5 +195,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func resetDone() {
         tracker.acknowledgeAll()
         refresh()
+    }
+
+    @objc private func toggleSound() {
+        notifier?.isSoundOn.toggle()
     }
 }

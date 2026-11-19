@@ -16,6 +16,15 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     /// The user has turned notifications off for this app. Read on the main queue.
     private(set) var isDenied = false
 
+    /// macOS has sound switched off for this app, so `isSoundOn` has no effect. Read on the main queue.
+    private(set) var isSoundOffInSystem = false
+
+    /// Whether notifications ask for a sound. On unless switched off in the menu; kept across restarts.
+    var isSoundOn: Bool {
+        get { UserDefaults.standard.object(forKey: "notificationSound") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "notificationSound") }
+    }
+
     private let center: UNUserNotificationCenter
 
     /// Nil outside an app bundle (e.g. `swift run`), where asking for the notification center raises.
@@ -24,11 +33,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center = .current()
         super.init()
         center.delegate = self
-        center.requestAuthorization(options: [.alert]) { [weak self] granted, error in
+        center.requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
             if let error {
                 log.error("authorization failed: \(error.localizedDescription, privacy: .public)")
             } else {
                 log.notice("authorization granted: \(granted, privacy: .public)")
+            }
+            self?.center.getNotificationSettings { settings in
+                log.notice("sound enabled: \(settings.soundSetting == .enabled, privacy: .public)")
             }
             self?.refreshStatus()
         }
@@ -37,7 +49,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     func refreshStatus() {
         center.getNotificationSettings { [weak self] settings in
             let denied = settings.authorizationStatus == .denied
-            DispatchQueue.main.async { self?.isDenied = denied }
+            let soundOff = settings.soundSetting == .disabled
+            DispatchQueue.main.async {
+                self?.isDenied = denied
+                self?.isSoundOffInSystem = soundOff
+            }
         }
     }
 
@@ -47,6 +63,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         // The session name tells apart several sessions in the same folder.
         if let name = event.session.name, !name.isEmpty { content.subtitle = name }
         content.body = event.body
+        if isSoundOn { content.sound = .default }
         content.userInfo = ["pid": Int(event.session.pid)]
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         center.add(request) { error in
@@ -62,7 +79,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter, willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .list])
+        completionHandler([.banner, .list, .sound])
     }
 
     func userNotificationCenter(

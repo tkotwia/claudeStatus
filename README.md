@@ -3,17 +3,19 @@
 A macOS menu bar indicator for Claude Code. When you have many sessions open, it shows at a glance how many are working and which ones are waiting for you.
 
 ```
-✳ 2  ✋ 1  ✓ 3
+◎ 2  ✋ 1  ✓ 3
 ```
+
+`◎` stands for the ClaudeStatus icon, an open ring with a dot.
 
 | Display | Meaning |
 |---|---|
-| `✳ 2` | 2 sessions are running (Claude is thinking or using tools) |
+| `2` next to the icon | 2 sessions are running (Claude is thinking or using tools) |
 | `✋ 1` | 1 session is blocked, waiting for you to approve a permission or answer a question (orange) |
 | `✓ 3` | 3 sessions have finished and are waiting for your next instruction |
-| `✳ ?` | Session data cannot be read, see [Troubleshooting](#troubleshooting) |
+| `?` next to the icon | Session data cannot be read, see [Troubleshooting](#troubleshooting) |
 
-Counts of zero are hidden, so when everything is idle you see only `✳`.
+Counts of zero are hidden, so when everything is idle you see only the icon.
 
 ## Coverage
 
@@ -60,11 +62,13 @@ Done
   ✓ docs · Desktop
 ────────────
 Clear Done Sessions
+✓ Notification Sound
 Quit
 ```
 
 - **Click a session** to jump to its window. If it is under Done, it also counts as seen and leaves the list.
 - **Clear Done Sessions** removes every session currently under Done. It appears only when there is at least one.
+- **Notification Sound** turns the sound of notifications on or off. The choice is kept across restarts.
 - **Quit** closes ClaudeStatus until the next login.
 
 Idle sessions are not listed.
@@ -88,7 +92,7 @@ ClaudeStatus posts a macOS notification when a session becomes blocked or done, 
 - One notification is posted per change. A session that stays blocked or done is not announced again.
 - Sessions that were already waiting when ClaudeStatus started are not announced.
 - Clicking a notification jumps to the session, the same as clicking it in the list.
-- Notifications are silent.
+- Notifications play the default sound unless Notification Sound is switched off in the list.
 
 The first launch asks for permission. Hover over the prompt and choose Options, then Allow, or turn it on under System Settings, Notifications, ClaudeStatus. The same page lets you switch from banners that fade to alerts that stay on screen.
 
@@ -131,17 +135,19 @@ Claude Code keeps a `~/.claude/sessions/<pid>.json` file for every live session 
 
 | Symptom | Cause and fix |
 |---|---|
-| The icon shows `✳ ?` | `~/.claude/sessions/` cannot be read. Check that the directory exists. It is created the first time Claude Code runs. |
+| A `?` next to the icon | `~/.claude/sessions/` cannot be read. Check that the directory exists. It is created the first time Claude Code runs. |
 | "⚠ Cannot read N session files" at the top of the list | Some files keep failing to parse, most likely because a Claude Code update changed the format. |
 | The numbers look wrong | Run `claude agents --json` to compare. It reads the same data. |
 | No notifications arrive | Check System Settings, Notifications, ClaudeStatus. When they are turned off, the list shows "⚠ Notifications are turned off in System Settings". For errors, run `log show --last 5m --predicate 'subsystem == "local.claude-status"'`. |
+| Notifications arrive without sound | Check that Notification Sound is ticked in the list. If the list shows "⚠ Notification sound is turned off in System Settings", turn on "Play sound for notification" under System Settings, Notifications, ClaudeStatus. |
 | Two icons in the menu bar | Two copies are running. `./scripts/login-item.sh install` removes the extra one. |
 
 ## Development
 
 ```bash
-swift test                 # unit tests
-./scripts/build-app.sh     # build and package
+swift test                     # unit tests
+./scripts/build-app.sh         # build and package
+swift scripts/make-icon.swift  # regenerate the icon files after changing the design
 ```
 
 ```
@@ -158,6 +164,9 @@ Sources/ClaudeStatus/            The menu bar app
   Jumper.swift                   Jumps to the window of each source
 Tests/ClaudeStatusCoreTests/     Unit tests
 Resources/Info.plist             App bundle settings
+Resources/AppIcon.icns           App icon, shown in notifications (generated)
+Resources/MenuBarIcon.pdf        Menu bar icon (generated)
 scripts/build-app.sh             Build, package and sign
 scripts/login-item.sh            Install or remove start at login
+scripts/make-icon.swift          Draws both icon files
 ```
