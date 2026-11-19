@@ -4,6 +4,7 @@ import ClaudeStatusCore
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let reader = SessionReader()
+    private let notifier = Notifier()
     private var tracker = SessionTracker()
     /// `nil` when the sessions directory cannot be read.
     private var snapshot: Snapshot?
@@ -23,6 +24,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
         reader.startWatching()
 
+        notifier?.onClick = { [weak self] pid in
+            MainActor.assumeIsolated { self?.jump(toPid: pid) }
+        }
+
         // Catches sessions whose process died without removing its file. `.common` keeps it
         // firing while the menu is open.
         let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
@@ -35,7 +40,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func refresh() {
         if let result = reader.read() {
-            snapshot = tracker.update(with: result.sessions)
+            let updated = tracker.update(with: result.sessions)
+            updated.attentionEvents(since: snapshot).forEach { notifier?.post($0) }
+            snapshot = updated
             unreadable = result.unreadable
             if result.needsRetry {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.refresh() }
@@ -92,8 +99,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
+        var warnings: [String] = []
         if unreadable > 0 {
-            menu.addItem(disabledItem("⚠ Cannot read \(unreadable) session file\(unreadable == 1 ? "" : "s")"))
+            warnings.append("⚠ Cannot read \(unreadable) session file\(unreadable == 1 ? "" : "s")")
+        }
+        // The setting is fetched asynchronously, so a change shows the next time the menu opens.
+        notifier?.refreshStatus()
+        if notifier?.isDenied == true {
+            warnings.append("⚠ Notifications are turned off in System Settings")
+        }
+        if !warnings.isEmpty {
+            warnings.forEach { menu.addItem(disabledItem($0)) }
             menu.addItem(.separator())
         }
 
@@ -146,9 +162,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @objc private func jump(_ sender: NSMenuItem) {
-        guard let session = snapshot?.all.first(where: { Int($0.pid) == sender.tag }) else { return }
+        jump(toPid: Int32(sender.tag))
+    }
+
+    /// Shared by the menu and by clicking a notification; either way the user has now seen it.
+    private func jump(toPid pid: Int32) {
+        guard let session = snapshot?.all.first(where: { $0.pid == pid }) else { return }
         Jumper.jump(to: session)
-        tracker.acknowledge(pid: session.pid)
+        tracker.acknowledge(pid: pid)
         refresh()
     }
 

@@ -76,6 +76,22 @@ Idle sessions are not listed.
 
 Sessions that were already idle when ClaudeStatus started are not marked as done, so panels that are open but unused stay out of the list.
 
+### Notifications
+
+ClaudeStatus posts a macOS notification when a session becomes blocked or done, so it also shows up in Notification Center:
+
+| | Blocked | Done |
+|---|---|---|
+| Title | `my-app · VS Code` | `my-app · VS Code` |
+| Body | `Blocked: needs permission` | `Done: waiting for your next instruction` |
+
+- One notification is posted per change. A session that stays blocked or done is not announced again.
+- Sessions that were already waiting when ClaudeStatus started are not announced.
+- Clicking a notification jumps to the session, the same as clicking it in the list.
+- Notifications are silent.
+
+The first launch asks for permission. Hover over the prompt and choose Options, then Allow, or turn it on under System Settings, Notifications, ClaudeStatus. The same page lets you switch from banners that fade to alerts that stay on screen.
+
 ### How precise the jump is
 
 | Source | Jumps to |
@@ -104,7 +120,8 @@ Claude Code keeps a `~/.claude/sessions/<pid>.json` file for every live session 
 
 ## Known limitations
 
-- A session interrupted with Esc is also listed under Done, because the state file cannot tell an interrupt from a normal finish.
+- A session interrupted with Esc is also listed under Done and notified, because the state file cannot tell an interrupt from a normal finish.
+- Notifications are posted even for the session you are looking at, because ClaudeStatus cannot tell which tab is in front.
 - For Claude Desktop it can only switch to the app, not to a specific session.
 - The done marks are kept in memory and are lost when ClaudeStatus restarts.
 - Background sessions (`claude --bg`) have not been tested.
@@ -117,6 +134,7 @@ Claude Code keeps a `~/.claude/sessions/<pid>.json` file for every live session 
 | The icon shows `✳ ?` | `~/.claude/sessions/` cannot be read. Check that the directory exists. It is created the first time Claude Code runs. |
 | "⚠ Cannot read N session files" at the top of the list | Some files keep failing to parse, most likely because a Claude Code update changed the format. |
 | The numbers look wrong | Run `claude agents --json` to compare. It reads the same data. |
+| No notifications arrive | Check System Settings, Notifications, ClaudeStatus. When they are turned off, the list shows "⚠ Notifications are turned off in System Settings". For errors, run `log show --last 5m --predicate 'subsystem == "local.claude-status"'`. |
 | Two icons in the menu bar | Two copies are running. `./scripts/login-item.sh install` removes the extra one. |
 
 ## Development
@@ -131,10 +149,12 @@ Sources/ClaudeStatusCore/        Pure logic with no UI dependency, covered by un
   Session.swift                  Session file model and state classification
   SessionLoader.swift            Parses the directory contents, handles half-written files
   SessionTracker.swift           State machine for the done marks
+  AttentionEvent.swift           Decides which state changes deserve a notification
 Sources/ClaudeStatus/            The menu bar app
   main.swift                     Entry point
   SessionReader.swift            Reads and watches the directory, checks process liveness
   StatusItemController.swift     Icon and dropdown list
+  Notifier.swift                 Posts notifications and handles clicks on them
   Jumper.swift                   Jumps to the window of each source
 Tests/ClaudeStatusCoreTests/     Unit tests
 Resources/Info.plist             App bundle settings
