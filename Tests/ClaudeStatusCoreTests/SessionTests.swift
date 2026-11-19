@@ -42,7 +42,7 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(session.activity, .blocked)
         XCTAssertEqual(session.sourceLabel, "VS Code")
         XCTAssertEqual(session.folderName, "claudeStatus")
-        XCTAssertEqual(session.blockedReason, "等你回答")
+        XCTAssertEqual(session.blockedReason, "needs your answer")
         XCTAssertTrue(session.isTracked)
     }
 

@@ -108,10 +108,10 @@ extension Session {
 
     public var blockedReason: String {
         switch waitingFor {
-        case "permission prompt": return "等權限確認"
-        case "input needed": return "等你回答"
+        case "permission prompt": return "needs permission"
+        case "input needed": return "needs your answer"
         case let other?: return other
-        case nil: return "等待中"
+        case nil: return "waiting"
         }
     }
 }

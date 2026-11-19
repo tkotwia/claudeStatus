@@ -93,28 +93,28 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
 
         if unreadable > 0 {
-            menu.addItem(disabledItem("⚠ 無法讀取 \(unreadable) 個 session 檔"))
+            menu.addItem(disabledItem("⚠ Cannot read \(unreadable) session file\(unreadable == 1 ? "" : "s")"))
             menu.addItem(.separator())
         }
 
         if let snapshot {
-            addSection("被擋住", snapshot.blocked, symbol: "hand.raised.fill", to: menu) { " — \($0.blockedReason)" }
-            addSection("執行中", snapshot.running, symbol: "circle.fill", to: menu)
-            addSection("跑完", snapshot.done, symbol: "checkmark.circle.fill", to: menu)
+            addSection("Blocked", snapshot.blocked, symbol: "hand.raised.fill", to: menu) { " — \($0.blockedReason)" }
+            addSection("Running", snapshot.running, symbol: "circle.fill", to: menu)
+            addSection("Done", snapshot.done, symbol: "checkmark.circle.fill", to: menu)
             if snapshot.blocked.isEmpty && snapshot.running.isEmpty && snapshot.done.isEmpty {
-                menu.addItem(disabledItem("沒有進行中的 session"))
+                menu.addItem(disabledItem("No active sessions"))
             }
         } else {
-            menu.addItem(disabledItem("⚠ 讀不到 \(reader.directory.path)"))
+            menu.addItem(disabledItem("⚠ Cannot read \(reader.directory.path)"))
         }
 
         menu.addItem(.separator())
         if snapshot?.done.isEmpty == false {
-            let reset = NSMenuItem(title: "清除跑完的 session", action: #selector(resetDone), keyEquivalent: "")
+            let reset = NSMenuItem(title: "Clear Done Sessions", action: #selector(resetDone), keyEquivalent: "")
             reset.target = self
             menu.addItem(reset)
         }
-        menu.addItem(NSMenuItem(title: "結束", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
     private func addSection(

@@ -19,6 +19,6 @@
     <key>LSUIElement</key>
     <true/>
     <key>NSAppleEventsUsageDescription</key>
-    <string>用來切換到執行該 session 的 iTerm2 分頁。</string>
+    <string>Used to switch to the iTerm2 tab running the session.</string>
 </dict>
 </plist>

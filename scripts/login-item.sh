@@ -26,7 +26,7 @@ install)
     while pgrep -x -u "$(id -u)" ClaudeStatus >/dev/null; do sleep 0.1; done
 
     mkdir -p "$(dirname "$PLIST")"
-    # No KeepAlive: choosing "結束" in the menu must really quit the app.
+    # No KeepAlive: choosing "Quit" in the menu must really quit the app.
     # ProcessType Interactive keeps launchd from throttling the refresh timer.
     cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

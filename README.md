@@ -1,143 +1,143 @@
 # ClaudeStatus
 
-macOS 選單列上的 Claude Code 狀態圖示。同時開很多個 session 時，一眼看出有幾個正在跑、哪些在等你。
+A macOS menu bar indicator for Claude Code. When you have many sessions open, it shows at a glance how many are working and which ones are waiting for you.
 
 ```
 ✳ 2  ✋ 1  ✓ 3
 ```
 
-| 顯示 | 意義 |
+| Display | Meaning |
 |---|---|
-| `✳ 2` | 2 個 session 正在執行（Claude 在思考或跑工具） |
-| `✋ 1` | 1 個 session 被擋住，等你確認權限或回答問題（橘色） |
-| `✓ 3` | 3 個 session 跑完了，等你下一個指令 |
-| `✳ ?` | 讀不到 session 資料，見[疑難排解](#疑難排解) |
+| `✳ 2` | 2 sessions are running (Claude is thinking or using tools) |
+| `✋ 1` | 1 session is blocked, waiting for you to approve a permission or answer a question (orange) |
+| `✓ 3` | 3 sessions have finished and are waiting for your next instruction |
+| `✳ ?` | Session data cannot be read, see [Troubleshooting](#troubleshooting) |
 
-數字為 0 的項目不顯示，所以全部閒置時只有一個 `✳`。
+Counts of zero are hidden, so when everything is idle you see only `✳`.
 
-## 涵蓋範圍
+## Coverage
 
-| 來源 | 支援 |
+| Source | Supported |
 |---|---|
 | Claude Code CLI | ✓ |
-| Claude Code VS Code 擴充 | ✓ |
-| Claude Desktop 的 Code 分頁 | ✓ |
-| Claude Desktop 的一般聊天、Cowork | ✗ |
+| Claude Code VS Code extension | ✓ |
+| Claude Desktop, Code tab | ✓ |
+| Claude Desktop, chat and Cowork | ✗ |
 
-一般聊天的回覆在雲端產生，Cowork 在 VM 裡執行，兩者在本機都沒有可讀的狀態。
+Chat replies are generated in the cloud and Cowork runs inside a VM, so neither leaves any state on the Mac that could be read.
 
-## 安裝
+## Install
 
-需要 macOS 14.4 以上，以及 Xcode（或 Swift 工具鏈）來編譯。
-
-```bash
-./scripts/build-app.sh            # 產生 build/ClaudeStatus.app
-open build/ClaudeStatus.app       # 啟動
-```
-
-要在登入時自動啟動：
+Requires macOS 14.4 or later, and Xcode (or a Swift toolchain) to build.
 
 ```bash
-./scripts/login-item.sh install     # 安裝並立刻啟動
-./scripts/login-item.sh uninstall   # 移除並停止
+./scripts/build-app.sh            # creates build/ClaudeStatus.app
+open build/ClaudeStatus.app       # start it
 ```
 
-這會在 `~/Library/LaunchAgents/local.claude-status.plist` 寫入一個 LaunchAgent，內容是 app 的絕對路徑。以下兩種情況要重新執行一次 `install`：
+To start it automatically at login:
 
-- 專案資料夾搬了位置
-- 重新編譯之後（執行中的還是舊版，重新安裝會換成新版）
+```bash
+./scripts/login-item.sh install     # install and start now
+./scripts/login-item.sh uninstall   # remove and stop
+```
 
-## 使用
+This writes a LaunchAgent to `~/Library/LaunchAgents/local.claude-status.plist` that holds the absolute path of the app. Run `install` again in these two cases:
 
-點圖示會展開清單，依狀態分組列出 session，每一列顯示資料夾名稱和來源：
+- The project folder has moved.
+- You have rebuilt the app. The running copy is still the old build, and reinstalling replaces it.
+
+## Usage
+
+Click the icon to open the list. Sessions are grouped by state, and each row shows the folder name and the source:
 
 ```
-被擋住
-  ✋ my-app · VS Code — 等權限確認
-執行中
+Blocked
+  ✋ my-app · VS Code — needs permission
+Running
   ● api-server · CLI
-跑完
+Done
   ✓ docs · Desktop
 ────────────
-清除跑完的 session
-結束
+Clear Done Sessions
+Quit
 ```
 
-- **點某個 session**：跳到它所在的視窗。如果它在「跑完」裡，同時視為已看過，從清單移除。
-- **清除跑完的 session**：一次清掉目前所有「跑完」的項目。只在有跑完的 session 時出現。
-- **結束**：關閉 ClaudeStatus，到下次登入才會再啟動。
+- **Click a session** to jump to its window. If it is under Done, it also counts as seen and leaves the list.
+- **Clear Done Sessions** removes every session currently under Done. It appears only when there is at least one.
+- **Quit** closes ClaudeStatus until the next login.
 
-閒置的 session 不會列在清單裡。
+Idle sessions are not listed.
 
-### 「跑完」的規則
+### When a session counts as done
 
-- **出現**：ClaudeStatus 執行期間，看到某個 session 從執行中或被擋住變成閒置。
-- **消失**：你對它送出下一個指令、關閉它、在清單裡點它，或按「清除跑完的 session」。
+- **It appears** when ClaudeStatus sees a session go from running or blocked to idle.
+- **It disappears** when you send that session another instruction, close it, click it in the list, or choose Clear Done Sessions.
 
-ClaudeStatus 啟動時已經閒置的 session 不算跑完，所以開著沒用過的面板不會出現在清單裡。
+Sessions that were already idle when ClaudeStatus started are not marked as done, so panels that are open but unused stay out of the list.
 
-### 跳轉的精準度
+### How precise the jump is
 
-| 來源 | 會跳到 |
+| Source | Jumps to |
 |---|---|
-| VS Code | 正確的視窗和 session 分頁 |
-| iTerm2 裡的 CLI | 正確的視窗和分頁 |
-| 其他終端機裡的 CLI | 該終端機 app |
-| Claude Desktop | Claude app |
+| VS Code | The right window and session tab |
+| CLI in iTerm2 | The right window and tab |
+| CLI in another terminal | That terminal app |
+| Claude Desktop | The Claude app |
 
-第一次跳到 iTerm2 時，macOS 會詢問是否允許 ClaudeStatus 控制 iTerm2，請允許。
+The first jump to iTerm2 makes macOS ask whether ClaudeStatus may control iTerm2. Allow it.
 
-## 運作方式
+## How it works
 
-Claude Code 會替每個執行中的 session 維護一個 `~/.claude/sessions/<pid>.json`，狀態一變就更新。ClaudeStatus 只讀這個目錄：
+Claude Code keeps a `~/.claude/sessions/<pid>.json` file for every live session and rewrites it whenever the state changes. ClaudeStatus only reads that directory:
 
-| 檔案裡的 `status` | 歸類 |
+| `status` in the file | Treated as |
 |---|---|
-| `busy` | 執行中 |
-| `waiting` | 被擋住 |
-| `idle`、`shell`、其他 | 閒置 |
+| `busy` | Running |
+| `waiting` | Blocked |
+| `idle`, `shell`, anything else | Idle |
 
-- 用 FSEvents 監看目錄，變化後約 0.2 秒更新；另外每 5 秒掃一次。
-- 行程已經不存在的檔案會被忽略。比對行程啟動時間，避免把重用同一個 PID 的其他行程誤認成 session。
-- 不使用 Claude Code hooks，不修改 `~/.claude/settings.json`。
-- 不讀取同目錄下的 `.key` 檔。
+- The directory is watched with FSEvents, so changes show up within about 0.2 seconds. It is also rescanned every 5 seconds.
+- Files whose process no longer exists are ignored. The process start time is compared too, so another process that reuses the same PID is not mistaken for the session.
+- It does not use Claude Code hooks and does not modify `~/.claude/settings.json`.
+- It does not read the `.key` files in the same directory.
 
-## 已知限制
+## Known limitations
 
-- 按 Esc 中斷的 session 也會被歸到「跑完」，因為狀態檔分不出中斷和正常結束。
-- Claude Desktop 只能切到 app，無法定位到特定 session。
-- 「跑完」的標記存在記憶體裡，ClaudeStatus 重啟後會清空。
-- 背景 session（`claude --bg`）沒有實際測試過。
-- `~/.claude/sessions/` 的檔案格式沒有官方文件，Claude Code 更新後可能改變。
+- A session interrupted with Esc is also listed under Done, because the state file cannot tell an interrupt from a normal finish.
+- For Claude Desktop it can only switch to the app, not to a specific session.
+- The done marks are kept in memory and are lost when ClaudeStatus restarts.
+- Background sessions (`claude --bg`) have not been tested.
+- The file format in `~/.claude/sessions/` is undocumented and may change in a Claude Code update.
 
-## 疑難排解
+## Troubleshooting
 
-| 現象 | 原因與處理 |
+| Symptom | Cause and fix |
 |---|---|
-| 圖示顯示 `✳ ?` | 讀不到 `~/.claude/sessions/`。確認這個目錄存在；至少執行過一次 Claude Code 才會有。 |
-| 清單最上方出現「⚠ 無法讀取 N 個 session 檔」 | 有檔案持續解析失敗，多半是 Claude Code 更新後格式變了。 |
-| 數字和實際不符 | 執行 `claude agents --json` 對照，它讀的是同一份資料。 |
-| 選單列出現兩個圖示 | 同時開了兩份。執行 `./scripts/login-item.sh install` 會清掉多的那份。 |
+| The icon shows `✳ ?` | `~/.claude/sessions/` cannot be read. Check that the directory exists. It is created the first time Claude Code runs. |
+| "⚠ Cannot read N session files" at the top of the list | Some files keep failing to parse, most likely because a Claude Code update changed the format. |
+| The numbers look wrong | Run `claude agents --json` to compare. It reads the same data. |
+| Two icons in the menu bar | Two copies are running. `./scripts/login-item.sh install` removes the extra one. |
 
-## 開發
+## Development
 
 ```bash
-swift test                 # 單元測試
-./scripts/build-app.sh     # 編譯並打包
+swift test                 # unit tests
+./scripts/build-app.sh     # build and package
 ```
 
 ```
-Sources/ClaudeStatusCore/        純邏輯，不依賴 UI，由單元測試涵蓋
-  Session.swift                  session 檔的資料模型與狀態分類
-  SessionLoader.swift            解析目錄內容，處理寫到一半的檔案
-  SessionTracker.swift           「跑完」標記的狀態機
-Sources/ClaudeStatus/            選單列 app
-  main.swift                     進入點
-  SessionReader.swift            讀取與監看目錄、行程存活檢查
-  StatusItemController.swift     圖示與下拉清單
-  Jumper.swift                   跳轉到各來源的視窗
-Tests/ClaudeStatusCoreTests/     單元測試
-Resources/Info.plist             app bundle 設定
-scripts/build-app.sh             編譯、打包、簽章
-scripts/login-item.sh            安裝或移除登入時啟動
+Sources/ClaudeStatusCore/        Pure logic with no UI dependency, covered by unit tests
+  Session.swift                  Session file model and state classification
+  SessionLoader.swift            Parses the directory contents, handles half-written files
+  SessionTracker.swift           State machine for the done marks
+Sources/ClaudeStatus/            The menu bar app
+  main.swift                     Entry point
+  SessionReader.swift            Reads and watches the directory, checks process liveness
+  StatusItemController.swift     Icon and dropdown list
+  Jumper.swift                   Jumps to the window of each source
+Tests/ClaudeStatusCoreTests/     Unit tests
+Resources/Info.plist             App bundle settings
+scripts/build-app.sh             Build, package and sign
+scripts/login-item.sh            Install or remove start at login
 ```
