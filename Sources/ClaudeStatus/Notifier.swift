@@ -5,8 +5,8 @@ import os
 
 // Public on purpose: NSLog output is redacted in the unified log, which would hide the one
 // thing worth reading here (why notifications are not arriving). Read with:
-//   log show --last 5m --predicate 'subsystem == "local.claude-status"'
-private let log = Logger(subsystem: "local.claude-status", category: "notifications")
+//   log show --last 5m --predicate 'subsystem == "io.github.tkotwia.claude-status"'
+private let log = Logger(subsystem: "io.github.tkotwia.claude-status", category: "notifications")
 
 /// Posts a macOS notification when a session starts needing the user.
 final class Notifier: NSObject, UNUserNotificationCenterDelegate {

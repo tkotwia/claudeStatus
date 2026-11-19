@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-LABEL=local.claude-status
+LABEL=io.github.tkotwia.claude-status
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 BINARY="$PWD/build/ClaudeStatus.app/Contents/MacOS/ClaudeStatus"
 DOMAIN="gui/$(id -u)"

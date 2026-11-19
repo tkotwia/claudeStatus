@@ -6,6 +6,9 @@
 // Run after changing the design:  swift scripts/make-icon.swift
 // The results are committed, so building the app does not need this script.
 //
+// macOS caches app icons by bundle identifier, so notifications can keep showing the previous
+// icon after a redesign. See Troubleshooting in the README.
+//
 // The glyph is drawn by hand because SF Symbols may not be used in app icons.
 import AppKit
 
@@ -75,7 +78,11 @@ let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("Cla
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 defer { try? FileManager.default.removeItem(at: iconset) }
 
-for points in [16, 32, 128, 256, 512] {
+// Only large sizes, on purpose. macOS 26 and later expect the 16 and 32 pixel images to follow
+// a different small-size template; images that are just this drawing scaled down do not match
+// it, and the system then shrinks the icon onto a pale plate on 1x displays, which makes it
+// look blank in notifications. Without small images the system scales the large ones itself.
+for points in [128, 256, 512] {
     try writeAppIconPNG(pixels: points, to: iconset.appendingPathComponent("icon_\(points)x\(points).png"))
     try writeAppIconPNG(pixels: points * 2, to: iconset.appendingPathComponent("icon_\(points)x\(points)@2x.png"))
 }

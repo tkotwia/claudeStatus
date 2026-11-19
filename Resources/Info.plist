@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>local.claude-status</string>
+    <string>io.github.tkotwia.claude-status</string>
     <key>CFBundleName</key>
     <string>ClaudeStatus</string>
     <key>CFBundleExecutable</key>

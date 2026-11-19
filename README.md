@@ -44,7 +44,7 @@ To start it automatically at login:
 ./scripts/login-item.sh uninstall   # remove and stop
 ```
 
-This writes a LaunchAgent to `~/Library/LaunchAgents/local.claude-status.plist` that holds the absolute path of the app. Run `install` again in these two cases:
+This writes a LaunchAgent to `~/Library/LaunchAgents/io.github.tkotwia.claude-status.plist` that holds the absolute path of the app. Run `install` again in these two cases:
 
 - The project folder has moved.
 - You have rebuilt the app. The running copy is still the old build, and reinstalling replaces it.
@@ -138,8 +138,9 @@ Claude Code keeps a `~/.claude/sessions/<pid>.json` file for every live session 
 | A `?` next to the icon | `~/.claude/sessions/` cannot be read. Check that the directory exists. It is created the first time Claude Code runs. |
 | "⚠ Cannot read N session files" at the top of the list | Some files keep failing to parse, most likely because a Claude Code update changed the format. |
 | The numbers look wrong | Run `claude agents --json` to compare. It reads the same data. |
-| No notifications arrive | Check System Settings, Notifications, ClaudeStatus. When they are turned off, the list shows "⚠ Notifications are turned off in System Settings". For errors, run `log show --last 5m --predicate 'subsystem == "local.claude-status"'`. |
+| No notifications arrive | Check System Settings, Notifications, ClaudeStatus. When they are turned off, the list shows "⚠ Notifications are turned off in System Settings". For errors, run `log show --last 5m --predicate 'subsystem == "io.github.tkotwia.claude-status"'`. |
 | Notifications arrive without sound | Check that Notification Sound is ticked in the list. If the list shows "⚠ Notification sound is turned off in System Settings", turn on "Play sound for notification" under System Settings, Notifications, ClaudeStatus. |
+| Notifications show a blank or outdated icon | macOS caches app icons by bundle identifier and keeps the cached one even after the app is rebuilt with a different icon. Restarting the notification services does not help. Clear the system icon cache, or change `CFBundleIdentifier` in `Resources/Info.plist`. |
 | Two icons in the menu bar | Two copies are running. `./scripts/login-item.sh install` removes the extra one. |
 
 ## Development
